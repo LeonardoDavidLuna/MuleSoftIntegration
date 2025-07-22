@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="4c4f01ff-22bc-41be-ba64-1b356ff6e251" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	
+<flow name="MainApiFlow">
+    <http:listener config-ref="HTTP_Listener_config" path="/api/*" doc:name="HTTP Listener"/>
+    <logger level="INFO" message="Received request: #[attributes.method] #[attributes.requestPath]" doc:name="Log Request"/>
+
+    <choice doc:name="Method Choice">
+        <when expression="#[attributes.method == 'GET']">
+            <flow-ref name="GetUsersFlow" doc:name="Call Get Users Flow"/>
+        </when>
+        <when expression="#[attributes.method == 'POST']">
+            <flow-ref name="CreateUserFlow" doc:name="Call Create User Flow"/>
+        </when>
+        <when expression="#[attributes.method == 'PUT']">
+            <flow-ref name="UpdateUserFlow" doc:name="Call Update User Flow"/>
+        </when>
+        <when expression="#[attributes.method == 'DELETE']">
+            <flow-ref name="DeleteUserFlow" doc:name="Call Delete User Flow"/>
+        </when>
+        <otherwise>
+            <raise-error type="APP:METHOD_NOT_ALLOWED" description="HTTP Method not supported."/>
+        </otherwise>
+    </choice>
+</flow>
+
+<flow name="GetUsersFlow">
+    <logger level="INFO" message="Handling GET request" doc:name="Log GET"/>
+    <set-payload value='#[{"message": "GET request handled"}]' doc:name="Set Payload"/>
+    <set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status"/>
+</flow>
+
+<flow name="CreateUserFlow">
+    <logger level="INFO" message="Handling POST request" doc:name="Log POST"/>
+    <set-payload value='#[{"message": "POST request handled"}]' doc:name="Set Payload"/>
+    <set-variable variableName="httpStatus" value="201" doc:name="Set HTTP Status"/>
+</flow>
+
+<flow name="UpdateUserFlow">
+    <logger level="INFO" message="Handling PUT request" doc:name="Log PUT"/>
+    <set-payload value='#[{"message": "PUT request handled"}]' doc:name="Set Payload"/>
+    <set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status"/>
+</flow>
+
+<flow name="DeleteUserFlow">
+    <logger level="INFO" message="Handling DELETE request" doc:name="Log DELETE"/>
+    <set-payload value='#[{"message": "DELETE request handled"}]' doc:name="Set Payload"/>
+    <set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status"/>
+</flow>
+</mule>
