@@ -1,20 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
-	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
 	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="4c4f01ff-22bc-41be-ba64-1b356ff6e251" >
 		<http:listener-connection host="0.0.0.0" port="8081" />
 	</http:listener-config>
 	
-<flow name="MainApiFlow">
-    <http:listener config-ref="HTTP_Listener_config" path="/api/*" doc:name="HTTP Listener"/>
-    <logger level="INFO" message="Received request: #[attributes.method] #[attributes.requestPath]" doc:name="Log Request"/>
+<db:config name="OracleConnection" doc:name="Database Config" doc:id="96516301-1821-473a-a09f-a0630d9817b8" >
+		<db:oracle-connection host="192.168.0.10" user="integration" password="integration" serviceName="orcl"/>
+	</db:config>
+	<db:config name="MSServerConnection" doc:name="Database Config" doc:id="3e820011-7615-4c84-998c-bebab0d1f824" >
+		<db:mssql-connection host="192.168.0.10" instanceName="NICK-SERVER\SQLEXPRESS" port="1433" user="leonardo" password="nick6435." databaseName="integration" />
+	</db:config>
+	<db:config name="MySQLConnection" doc:name="Database Config" doc:id="6ed991b2-b69c-4141-ad25-976e386f3d10" >
+		<db:my-sql-connection host="localhost" port="3306" user="leonardo" password="nick6435." database="integration" />
+	</db:config>	
+	
+	<flow name="MainApiFlow">
+    <http:listener config-ref="HTTP_Listener_config" path="/api/*" doc:name="HTTP Listener" allowedMethods="GET, POST, PUT, DELETE"/>
+		<logger level="INFO" doc:name="Log Request" message="#[attributes.queryParams.clienteid]"/>
 
-    <choice doc:name="Method Choice">
+    <set-variable value="#[attributes.queryParams.clienteid]" doc:name="Set Variable" doc:id="606c72b8-d076-4aaf-a9d6-26a77302cc1c" variableName="clienteid"/>
+		<choice doc:name="Method Choice">
         <when expression="#[attributes.method == 'GET']">
-            <flow-ref name="GetUsersFlow" doc:name="Call Get Users Flow"/>
+            <flow-ref name="GetUserFlow" doc:name="Call Get Users Flow" doc:id="5eb18823-59ae-46d1-8c97-de5adfed3b86"/>
+        </when>
+        <when expression="#[attributes.method == 'GET' and attributes.queryParams startsWith '/api/clientes/']">
+            <flow-ref name="GetUsersFlow" doc:name="Call Get User Flow" doc:id="c9eb8f55-fc6b-4e1f-b2e0-6a3255990408"/>
         </when>
         <when expression="#[attributes.method == 'POST']">
             <flow-ref name="CreateUserFlow" doc:name="Call Create User Flow"/>
@@ -23,6 +39,7 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
             <flow-ref name="UpdateUserFlow" doc:name="Call Update User Flow"/>
         </when>
         <when expression="#[attributes.method == 'DELETE']">
+        	 <set-variable variableName="clienteId" value="#[attributes.queryParams.clienteid]" doc:name="Extract Cliente ID" />
             <flow-ref name="DeleteUserFlow" doc:name="Call Delete User Flow"/>
         </when>
         <otherwise>
@@ -31,27 +48,107 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
     </choice>
 </flow>
 
-<flow name="GetUsersFlow">
-    <logger level="INFO" message="Handling GET request" doc:name="Log GET"/>
-    <set-payload value='#[{"message": "GET request handled"}]' doc:name="Set Payload"/>
-    <set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status"/>
+<flow name="GetUsersFlow" doc:id="b07b64be-33fd-4e6d-bca5-55fabda381af">
+    <db:select doc:name="Select" doc:id="ce709990-d8dc-4d22-a761-5697eeb23a6e" config-ref="OracleConnection">
+			<db:sql><![CDATA[SELECT * FROM CLIENTES]]></db:sql>
+		</db:select>
+		<logger level="INFO" doc:name="" doc:id="535f2c21-610b-4a8e-8fcc-2ba3411c648b" message='#[{"message": "Customers requested successfully"}]' />
+		<ee:transform doc:name="Transform Message" doc:id="46dc9b47-3125-4004-be07-6b02be46eab5" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ((cliente, index) -> {
+    id: cliente.CLIENTEID,
+    nombre: cliente.NOMBRE,
+    apellido: cliente.APELLIDO,
+    email: cliente.EMAIL,
+    telefono: cliente.TELEFONO
+})]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status" />
 </flow>
 
+<flow name="GetUserFlow" doc:id="3b0bdbfe-815e-41cf-a3f1-9a2b37994247">
+    <db:select doc:name="Select" doc:id="650a2edd-4bb3-4024-9ca7-1af0955de0ff" config-ref="OracleConnection">
+			<db:sql><![CDATA[SELECT * FROM CLIENTES WHERE CLIENTEID = :clienteid]]></db:sql>
+			  <db:input-parameters><![CDATA[#[{ clienteid: vars.clienteid as Number }]]]></db:input-parameters>
+		</db:select>
+		<logger level="INFO" doc:name="" doc:id="ee11007d-ddd2-4a01-9cb2-759e7bf6b177" message='#[{"message": "Customer requested successfully", "clienteid": vars.clienteid}]' />
+		<ee:transform doc:name="Transform Message" doc:id="1d950973-aa31-4d27-88c2-4ffd02ea2b07" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ((cliente, index) -> {
+    id: cliente.CLIENTEID,
+    nombre: cliente.NOMBRE,
+    apellido: cliente.APELLIDO,
+    email: cliente.EMAIL,
+    telefono: cliente.TELEFONO
+})]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status" />
+</flow>
+
+
 <flow name="CreateUserFlow">
-    <logger level="INFO" message="Handling POST request" doc:name="Log POST"/>
-    <set-payload value='#[{"message": "POST request handled"}]' doc:name="Set Payload"/>
+    <db:insert doc:name="Insert" doc:id="e4762494-f51b-4f46-8b0b-3f8d2f362c69" config-ref="OracleConnection">
+			<db:sql ><![CDATA[INSERT INTO clientes (NOMBRE, APELLIDO, EMAIL, TELEFONO) VALUES (:nombre, :apellido, :email, :telefono)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+    nombre: payload.nombre as String,
+    apellido: payload.apellido as String,
+    email: payload.email as String,
+    telefono: payload.telefono as String
+}]]]></db:input-parameters>
+		</db:insert>
+    <set-payload value='#[{"message": "User created successfully"}]' doc:name="Set Payload"/>
     <set-variable variableName="httpStatus" value="201" doc:name="Set HTTP Status"/>
+		<ee:transform doc:name="Transform Message" doc:id="cf6aff23-1b4e-47d8-9de5-cbbaea564c57" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
 </flow>
 
 <flow name="UpdateUserFlow">
-    <logger level="INFO" message="Handling PUT request" doc:name="Log PUT"/>
     <set-payload value='#[{"message": "PUT request handled"}]' doc:name="Set Payload"/>
     <set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status"/>
+		<ee:transform doc:name="Transform Message" doc:id="e4d8ab6c-63aa-4335-8163-b270d55a98a3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
 </flow>
 
 <flow name="DeleteUserFlow">
-    <logger level="INFO" message="Handling DELETE request" doc:name="Log DELETE"/>
-    <set-payload value='#[{"message": "DELETE request handled"}]' doc:name="Set Payload"/>
-    <set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status"/>
+		<db:delete config-ref="OracleConnection" doc:name="Delete Cliente">
+        <db:sql><![CDATA[DELETE FROM CLIENTES WHERE CLIENTEID = :clienteid]]>
+        </db:sql>
+			<db:input-parameters><![CDATA[#[{ clienteid: vars.clienteid}]]]></db:input-parameters>
+    </db:delete>
+		<logger level="INFO" message="#[{ clienteid: vars.clienteid }]" />
+		<set-payload value='#[{"message": "Customer deleted successfully", "clienteid": vars.clienteid}]' doc:name="Set Success Response"/>
+    <set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status 200"/>
+		<ee:transform doc:name="Transform Message" doc:id="037c8ec1-f1a0-4505-99ca-dd23c94a9c55" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
 </flow>
+
 </mule>
