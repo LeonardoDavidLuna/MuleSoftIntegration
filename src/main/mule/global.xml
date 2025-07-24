@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:db="http://www.mulesoft.org/schema/mule/db"
-	xmlns:http="http://www.mulesoft.org/schema/mule/http"
-	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd 
-http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
 	
 		<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="826b65a1-d054-4798-a37e-148a590f42b2" >
 		<http:listener-connection host="${http.listener.host}" port="${http.listener.port}" />
@@ -23,7 +24,10 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 	</db:config>
 	<configuration-properties doc:name="Configuration properties" doc:id="7785a383-bf09-4da0-8ce5-a0f2337e53c0" file="${env}.properties" />
 	<global-property doc:name="Global Property" doc:id="7e2a3331-f2ae-443d-a9e7-9b687ca008e4" name="env" value="local" />
-	<configuration-properties doc:name="Configuration properties" doc:id="2f73afce-a96a-4a7b-af3b-107ab4111360" file="database.properties" />	
+	<configuration-properties doc:name="Configuration properties" doc:id="2f73afce-a96a-4a7b-af3b-107ab4111360" file="database.properties" />
+	<file:config name="File_Config" doc:name="File Config" doc:id="0b4881d6-4d30-42ce-b539-8c74789429bc" >
+		<file:connection workingDir="D:/ARCHIVOS/8 OTROS/File/MS" />
+	</file:config>	
 	
 	
 	
