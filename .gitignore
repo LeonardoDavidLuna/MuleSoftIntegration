@@ -45,3 +45,6 @@ target/
 .mule/
 .DS_Store
 velocity.log
+src/main/resources/database.properties
+src/main/resources/dev.properties
+src/main/resources/local.database.properties.yaml
