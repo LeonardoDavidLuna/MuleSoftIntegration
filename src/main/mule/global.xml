@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	
+		<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="826b65a1-d054-4798-a37e-148a590f42b2" >
+		<http:listener-connection host="${http.listener.host}" port="${http.listener.port}" />
+	</http:listener-config>
+	
+<db:config name="OracleConnection" doc:name="Database Config" doc:id="81795894-eea9-4996-830b-ff7d489d47ef" >
+		<db:oracle-connection host="${oracle.database.host}" user="${oracle.database.user}" password="${oracle.database.password}" serviceName="${oracle.database.servicename}" port="${oracle.database.port}"/>
+	</db:config>
+	<db:config name="MSServerConnection" doc:name="Database Config" doc:id="8ba01524-8b90-418e-be09-174f3b2dbdac" >
+		<db:mssql-connection host="${msserver.database.host}" instanceName="${msserver.database.instancename}" port="${msserver.database.port}" user="${msserver.database.user}" password="${msserver.database.password}" databaseName="${msserver.database.databasename}" />
+	</db:config>
+	<db:config name="MySQLConnection" doc:name="Database Config" doc:id="4d5ef8a7-b43c-4655-8b87-f94055ad298a" >
+		<db:my-sql-connection host="${mysql.database.host}" port="${mysql.database.port}" user="${mysql.database.user}" password="${mysql.database.password}" database="${mysql.database.databasename}" />
+	</db:config>
+	<configuration-properties doc:name="Configuration properties" doc:id="7785a383-bf09-4da0-8ce5-a0f2337e53c0" file="${env}.properties" />
+	<global-property doc:name="Global Property" doc:id="7e2a3331-f2ae-443d-a9e7-9b687ca008e4" name="env" value="local" />
+	<configuration-properties doc:name="Configuration properties" doc:id="2f73afce-a96a-4a7b-af3b-107ab4111360" file="database.properties" />	
+	
+	
+	
+</mule>

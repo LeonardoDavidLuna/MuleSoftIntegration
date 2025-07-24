@@ -1,24 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
-	xmlns:http="http://www.mulesoft.org/schema/mule/http"
-	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
-http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
-	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="4c4f01ff-22bc-41be-ba64-1b356ff6e251" >
-		<http:listener-connection host="0.0.0.0" port="8081" />
-	</http:listener-config>
-	
-<db:config name="OracleConnection" doc:name="Database Config" doc:id="96516301-1821-473a-a09f-a0630d9817b8" >
-		<db:oracle-connection host="192.168.0.10" user="integration" password="integration" serviceName="orcl"/>
-	</db:config>
-	<db:config name="MSServerConnection" doc:name="Database Config" doc:id="3e820011-7615-4c84-998c-bebab0d1f824" >
-		<db:mssql-connection host="192.168.0.10" instanceName="NICK-SERVER\SQLEXPRESS" port="1433" user="leonardo" password="nick6435." databaseName="integration" />
-	</db:config>
-	<db:config name="MySQLConnection" doc:name="Database Config" doc:id="6ed991b2-b69c-4141-ad25-976e386f3d10" >
-		<db:my-sql-connection host="localhost" port="3306" user="leonardo" password="nick6435." database="integration" />
-	</db:config>	
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
 	
 	<flow name="MainApiFlow">
     <http:listener config-ref="HTTP_Listener_config" path="/api/*" doc:name="HTTP Listener" allowedMethods="GET, POST, PUT, DELETE"/>
@@ -179,5 +167,31 @@ output application/json
             </ee:message>
         </ee:transform>
 	</flow>
+	<flow name="integrationFlow" doc:id="ed87f09e-d400-4221-b369-ef964f3b90cb" >
+		<http:listener doc:name="Listener" doc:id="02cb61e3-946c-434b-ae29-d29f6cecba63" config-ref="HTTP_Listener_config" path="generate-csv"/>
+		<set-payload value='#[{&#10;                "totalRecords": 1,&#10;                "orderDetails": [&#10;                    {&#10;                        "CLIENTE_NOMBRE": "Carlos",&#10;                        "CLIENTE_APELLIDO": "López",&#10;                        "CLIENTE_EMAIL": "carlos.lopez@ejemplo.com",&#10;                        "ORDEN_ID": 2,&#10;                        "FECHA_ORDEN": "2023-10-25T00:00:00",&#10;                        "PRODUCTO_NOMBRE": "Smartphone",&#10;                        "PRODUCTO_DESCRIPCION": "Smartphone con cámara de 12MP",&#10;                        "PRODUCTO_PRECIO": 800,&#10;                        "CANTIDAD_ORDENADA": 2,&#10;                        "TOTAL_ORDEN": 1600&#10;                    },&#10;                    {&#10;                        "CLIENTE_NOMBRE": "Ana",&#10;                        "CLIENTE_APELLIDO": "García",&#10;                        "CLIENTE_EMAIL": "ana.garcia@ejemplo.com",&#10;                        "ORDEN_ID": 3,&#10;                        "FECHA_ORDEN": "2023-10-26T00:00:00",&#10;                        "PRODUCTO_NOMBRE": "Laptop",&#10;                        "PRODUCTO_DESCRIPCION": "Laptop ultraligera",&#10;                        "PRODUCTO_PRECIO": 1200,&#10;                        "CANTIDAD_ORDENADA": 1,&#10;                        "TOTAL_ORDEN": 1200&#10;                    }&#10;                ]&#10;            }]' doc:name="Set Payload" doc:id="2696598a-f4e3-4a89-ae24-7143c3ef8664" />
+		<ee:transform doc:name="Transform Message" doc:id="e70ded61-e14c-4a1a-b482-62bf4222260d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[ %dw 2.0
+output application/csv header=true, separator=","
+---
+payload.orderDetails map (order, index) -> {
+	CLIENTE_NOMBRE: order.CLIENTE_NOMBRE,
+    CLIENTE_APELLIDO: order.CLIENTE_APELLIDO,
+    CLIENTE_EMAIL: order.CLIENTE_EMAIL,
+    ORDEN_ID: order.ORDEN_ID,
+    FECHA_ORDEN: order.FECHA_ORDEN,
+    PRODUCTO_NOMBRE: order.PRODUCTO_NOMBRE,
+    PRODUCTO_DESCRIPCION: order.PRODUCTO_DESCRIPCION,
+    PRODUCTO_PRECIO: order.PRODUCTO_PRECIO,
+    CANTIDAD_ORDENADA: order.CANTIDAD_ORDENADA,
+    TOTAL_ORDEN: order.TOTAL_ORDEN
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<file:write doc:name="Write" doc:id="71e2e9aa-9ed2-4bad-8490-40c026d20451" path="D:\ARCHIVOS\8 OTROS\File\MS\OrderReport_.csv" />
+	</flow>
+	
+	
 
 </mule>
