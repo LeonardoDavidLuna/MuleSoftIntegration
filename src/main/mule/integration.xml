@@ -26,20 +26,19 @@ http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/cu
 
     <set-variable value="#[attributes.queryParams.clienteid]" doc:name="Set Variable" doc:id="606c72b8-d076-4aaf-a9d6-26a77302cc1c" variableName="clienteid"/>
 		<choice doc:name="Method Choice">
-        <when expression="#[attributes.method == 'GET']">
-            <flow-ref name="GetUserFlow" doc:name="Call Get Users Flow" doc:id="5eb18823-59ae-46d1-8c97-de5adfed3b86"/>
+        <when expression="#[attributes.method == 'GET' and attributes.relativePath == '/api/clientes']">
+            <flow-ref name="GetUsersFlow" doc:name="Call Get Users Flow" doc:id="5eb18823-59ae-46d1-8c97-de5adfed3b86"/>
         </when>
-        <when expression="#[attributes.method == 'GET' and attributes.queryParams startsWith '/api/clientes/']">
-            <flow-ref name="GetUsersFlow" doc:name="Call Get User Flow" doc:id="c9eb8f55-fc6b-4e1f-b2e0-6a3255990408"/>
+        <when expression="#[attributes.method == 'GET' and attributes.relativePath == '/api/cliente' and attributes.queryParams.clienteid != null]">
+            <flow-ref name="GetUserFlow" doc:name="Call Get User Flow" doc:id="c9eb8f55-fc6b-4e1f-b2e0-6a3255990408"/>
         </when>
-        <when expression="#[attributes.method == 'POST']">
+        <when expression="#[attributes.method == 'POST' and attributes.relativePath == '/api/cliente']">
             <flow-ref name="CreateUserFlow" doc:name="Call Create User Flow"/>
         </when>
-        <when expression="#[attributes.method == 'PUT']">
+        <when expression="#[attributes.method == 'PUT' and attributes.relativePath == '/api/cliente' and attributes.queryParams.clienteid != null]">
             <flow-ref name="UpdateUserFlow" doc:name="Call Update User Flow"/>
         </when>
-        <when expression="#[attributes.method == 'DELETE']">
-        	 <set-variable variableName="clienteId" value="#[attributes.queryParams.clienteid]" doc:name="Extract Cliente ID" />
+        <when expression="#[attributes.method == 'DELETE' and attributes.relativePath == '/api/cliente' and attributes.queryParams.clienteid != null]">
             <flow-ref name="DeleteUserFlow" doc:name="Call Delete User Flow"/>
         </when>
         <otherwise>
@@ -73,7 +72,7 @@ payload map ((cliente, index) -> {
 <flow name="GetUserFlow" doc:id="3b0bdbfe-815e-41cf-a3f1-9a2b37994247">
     <db:select doc:name="Select" doc:id="650a2edd-4bb3-4024-9ca7-1af0955de0ff" config-ref="OracleConnection">
 			<db:sql><![CDATA[SELECT * FROM CLIENTES WHERE CLIENTEID = :clienteid]]></db:sql>
-			  <db:input-parameters><![CDATA[#[{ clienteid: vars.clienteid as Number }]]]></db:input-parameters>
+			  <db:input-parameters><![CDATA[#[{ clienteid: vars.clienteid}]]]></db:input-parameters>
 		</db:select>
 		<logger level="INFO" doc:name="" doc:id="ee11007d-ddd2-4a01-9cb2-759e7bf6b177" message='#[{"message": "Customer requested successfully", "clienteid": vars.clienteid}]' />
 		<ee:transform doc:name="Transform Message" doc:id="1d950973-aa31-4d27-88c2-4ffd02ea2b07" >
@@ -139,7 +138,7 @@ payload]]></ee:set-payload>
 			<db:input-parameters><![CDATA[#[{ clienteid: vars.clienteid}]]]></db:input-parameters>
     </db:delete>
 		<logger level="INFO" message="#[{ clienteid: vars.clienteid }]" />
-		<set-payload value='#[{"message": "Customer deleted successfully", "clienteid": vars.clienteid}]' doc:name="Set Success Response"/>
+		<set-payload value='#[{"message": "Customer deleted successfully"}]' doc:name="Set Success Response"/>
     <set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status 200"/>
 		<ee:transform doc:name="Transform Message" doc:id="037c8ec1-f1a0-4505-99ca-dd23c94a9c55" >
 			<ee:message >
@@ -150,5 +149,21 @@ payload]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 </flow>
+	<!-- [STUDIO:"Reports"]<flow name="Reports" doc:id="376ac143-8270-41b8-9631-2c53101b6ddf" >
+		<http:listener doc:name="HTTP Listener" doc:id="cbaca28e-2c6a-44ce-a80f-4c1a17ebcec2" config-ref="HTTP_Listener_config" path="/reports" allowedMethods="GET" />
+		<db:stored-procedure doc:name="Stored procedure" doc:id="8e3e74a2-ec58-4c07-ac9a-80351417f437" config-ref="OracleConnection">
+			<db:sql><![CDATA[{ CALL GetClienteOrderDetails_Oracle(:p_cliente_id, :p_results, :resultCount) }&#93;&#93;></db:sql>
+            <db:in-out-parameters >
+				<db:in-out-parameter key="p_cliente_id" value="vars.clienteid"/>
+			</db:in-out-parameters>
+			<db:output-parameters>
+                <!&#45;&#45; Definición del parámetro de salida SYS_REFCURSOR &#45;&#45;>
+                <db:output-parameter name="p_results" type="REF_CURSOR" key="p_results"/>
+                <!&#45;&#45; Definición del nuevo parámetro de salida resultCount &#45;&#45;>
+				<db:output-parameter key="resultCount" type="NUMERIC" />
+            </db:output-parameters>
+		</db:stored-procedure>
+		<set-payload value='#[payload&#93;' doc:name="Set Payload" doc:id="cb376242-35cb-4396-a1a5-bf0c9c169ae3" />
+	</flow> [STUDIO] -->
 
 </mule>
