@@ -41,6 +41,9 @@ http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/cu
         <when expression="#[attributes.method == 'DELETE' and attributes.relativePath == '/api/cliente' and attributes.queryParams.clienteid != null]">
             <flow-ref name="DeleteUserFlow" doc:name="Call Delete User Flow"/>
         </when>
+        <when expression="#[attributes.method == 'GET' and attributes.relativePath == '/api/reports' and attributes.queryParams.clienteid != null]">
+            <flow-ref name="UserReports" doc:name="Call Reports User Flow"/>
+        </when>
         <otherwise>
             <raise-error type="APP:METHOD_NOT_ALLOWED" description="HTTP Method not supported."/>
         </otherwise>
@@ -149,21 +152,32 @@ payload]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 </flow>
-	<!-- [STUDIO:"Reports"]<flow name="Reports" doc:id="376ac143-8270-41b8-9631-2c53101b6ddf" >
-		<http:listener doc:name="HTTP Listener" doc:id="cbaca28e-2c6a-44ce-a80f-4c1a17ebcec2" config-ref="HTTP_Listener_config" path="/reports" allowedMethods="GET" />
+
+	<flow name="UserReports" doc:id="376ac143-8270-41b8-9631-2c53101b6ddf" >
 		<db:stored-procedure doc:name="Stored procedure" doc:id="8e3e74a2-ec58-4c07-ac9a-80351417f437" config-ref="OracleConnection">
-			<db:sql><![CDATA[{ CALL GetClienteOrderDetails_Oracle(:p_cliente_id, :p_results, :resultCount) }&#93;&#93;></db:sql>
-            <db:in-out-parameters >
-				<db:in-out-parameter key="p_cliente_id" value="vars.clienteid"/>
+			<db:sql><![CDATA[{call GetClienteOrderDetails_Oracle(:p_cliente_id, :p_results, :resultCount)}]]>
+            </db:sql>
+			<db:in-out-parameters >
+				<db:in-out-parameter key="p_cliente_id" value="#[vars.clienteid]" />
 			</db:in-out-parameters>
-			<db:output-parameters>
-                <!&#45;&#45; Definición del parámetro de salida SYS_REFCURSOR &#45;&#45;>
-                <db:output-parameter name="p_results" type="REF_CURSOR" key="p_results"/>
-                <!&#45;&#45; Definición del nuevo parámetro de salida resultCount &#45;&#45;>
+			<db:output-parameters >
+				<db:output-parameter key="p_results" type="REF_CURSOR" />
 				<db:output-parameter key="resultCount" type="NUMERIC" />
-            </db:output-parameters>
+			</db:output-parameters>
+            
 		</db:stored-procedure>
-		<set-payload value='#[payload&#93;' doc:name="Set Payload" doc:id="cb376242-35cb-4396-a1a5-bf0c9c169ae3" />
-	</flow> [STUDIO] -->
+		
+		<ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"totalRecords": payload.resultCount,
+    "orderDetails": payload.p_results
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+	</flow>
 
 </mule>
