@@ -15,22 +15,25 @@ http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/fil
     <set-variable value="#[attributes.queryParams.clienteid]" doc:name="Set Variable" doc:id="606c72b8-d076-4aaf-a9d6-26a77302cc1c" variableName="clienteid"/>
 		<choice doc:name="Method Choice">
         <when expression="#[attributes.method == 'GET' and attributes.relativePath == '/api/clientes']">
-            <flow-ref name="GetUsersFlow" doc:name="Call Get Users Flow" doc:id="5eb18823-59ae-46d1-8c97-de5adfed3b86"/>
+            <flow-ref name="GETUsersFlow" doc:name="Call Get Users Flow" doc:id="5eb18823-59ae-46d1-8c97-de5adfed3b86"/>
         </when>
         <when expression="#[attributes.method == 'GET' and attributes.relativePath == '/api/cliente' and attributes.queryParams.clienteid != null]">
-            <flow-ref name="GetUserFlow" doc:name="Call Get User Flow" doc:id="c9eb8f55-fc6b-4e1f-b2e0-6a3255990408"/>
+            <flow-ref name="GETUserFlow" doc:name="Call Get User Flow" doc:id="c9eb8f55-fc6b-4e1f-b2e0-6a3255990408"/>
         </when>
         <when expression="#[attributes.method == 'POST' and attributes.relativePath == '/api/cliente']">
-            <flow-ref name="CreateUserFlow" doc:name="Call Create User Flow"/>
+            <flow-ref name="POSTUserFlow" doc:name="Call Create User Flow"/>
         </when>
         <when expression="#[attributes.method == 'PUT' and attributes.relativePath == '/api/cliente' and attributes.queryParams.clienteid != null]">
-            <flow-ref name="UpdateUserFlow" doc:name="Call Update User Flow"/>
+            <flow-ref name="PUTUserFlow" doc:name="Call Update User Flow"/>
         </when>
         <when expression="#[attributes.method == 'DELETE' and attributes.relativePath == '/api/cliente' and attributes.queryParams.clienteid != null]">
-            <flow-ref name="DeleteUserFlow" doc:name="Call Delete User Flow"/>
+            <flow-ref name="DELETEUserFlow" doc:name="Call Delete User Flow"/>
         </when>
-        <when expression="#[attributes.method == 'GET' and attributes.relativePath == '/api/reports' and attributes.queryParams.clienteid != null]">
-            <flow-ref name="UserReports" doc:name="Call Reports User Flow"/>
+        <when expression="#[attributes.method == 'GET' and attributes.relativePath == '/api/report' and attributes.queryParams.clienteid != null]">
+            <flow-ref name="GENERATEUserReports" doc:name="Call Reports User Flow"/>
+        </when>
+        <when expression="#[attributes.method == 'GET' and attributes.relativePath == '/api/allreports']">
+            <flow-ref name="GENERATEUsersReports" doc:name="Call All Reports User Flow"/>
         </when>
         <otherwise>
             <raise-error type="APP:METHOD_NOT_ALLOWED" description="HTTP Method not supported."/>
@@ -38,78 +41,72 @@ http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/fil
     </choice>
 </flow>
 
-<flow name="GetUsersFlow" doc:id="b07b64be-33fd-4e6d-bca5-55fabda381af">
+<flow name="GETUsersFlow" doc:id="b07b64be-33fd-4e6d-bca5-55fabda381af">
     <db:select doc:name="Select" doc:id="ce709990-d8dc-4d22-a761-5697eeb23a6e" config-ref="OracleConnection">
 			<db:sql><![CDATA[SELECT * FROM CLIENTES]]></db:sql>
 		</db:select>
-		<logger level="INFO" doc:name="" doc:id="535f2c21-610b-4a8e-8fcc-2ba3411c648b" message='#[{"message": "Customers requested successfully"}]' />
 		<ee:transform doc:name="Transform Message" doc:id="46dc9b47-3125-4004-be07-6b02be46eab5" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
 payload map ((cliente, index) -> {
-    id: cliente.CLIENTEID,
-    nombre: cliente.NOMBRE,
-    apellido: cliente.APELLIDO,
-    email: cliente.EMAIL,
-    telefono: cliente.TELEFONO
-})]]></ee:set-payload>
+	id: cliente.CLIENTEID,
+	nombre: cliente.NOMBRE,
+	apellido: cliente.APELLIDO,
+	email: cliente.EMAIL,
+	telefono: cliente.TELEFONO
+})]]>
+				</ee:set-payload>
 			</ee:message>
 		</ee:transform>
 		<set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status" />
 </flow>
 
-<flow name="GetUserFlow" doc:id="3b0bdbfe-815e-41cf-a3f1-9a2b37994247">
+<flow name="GETUserFlow" doc:id="3b0bdbfe-815e-41cf-a3f1-9a2b37994247">
     <db:select doc:name="Select" doc:id="650a2edd-4bb3-4024-9ca7-1af0955de0ff" config-ref="OracleConnection">
 			<db:sql><![CDATA[SELECT * FROM CLIENTES WHERE CLIENTEID = :clienteid]]></db:sql>
 			  <db:input-parameters><![CDATA[#[{ clienteid: vars.clienteid}]]]></db:input-parameters>
 		</db:select>
-		<logger level="INFO" doc:name="" doc:id="ee11007d-ddd2-4a01-9cb2-759e7bf6b177" message='#[{"message": "Customer requested successfully", "clienteid": vars.clienteid}]' />
 		<ee:transform doc:name="Transform Message" doc:id="1d950973-aa31-4d27-88c2-4ffd02ea2b07" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
 payload map ((cliente, index) -> {
-    id: cliente.CLIENTEID,
-    nombre: cliente.NOMBRE,
-    apellido: cliente.APELLIDO,
-    email: cliente.EMAIL,
-    telefono: cliente.TELEFONO
-})]]></ee:set-payload>
+	id: cliente.CLIENTEID,
+	nombre: cliente.NOMBRE,
+	apellido: cliente.APELLIDO,
+	email: cliente.EMAIL,
+	telefono: cliente.TELEFONO
+})]]>
+				</ee:set-payload>
 			</ee:message>
 		</ee:transform>
 		<set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status" />
 </flow>
 
 
-<flow name="CreateUserFlow">
+<flow name="POSTUserFlow">
     <db:insert doc:name="Insert" doc:id="e4762494-f51b-4f46-8b0b-3f8d2f362c69" config-ref="OracleConnection">
 			<db:sql ><![CDATA[INSERT INTO clientes (NOMBRE, APELLIDO, EMAIL, TELEFONO) VALUES (:nombre, :apellido, :email, :telefono)]]></db:sql>
-			<db:input-parameters ><![CDATA[#[%dw 2.0
-output application/json
----
-{
-    nombre: payload.nombre as String,
-    apellido: payload.apellido as String,
-    email: payload.email as String,
-    telefono: payload.telefono as String
-}]]]></db:input-parameters>
+			<db:input-parameters >
+			<![CDATA[#[%dw 2.0
+						output application/json
+						---
+						{
+						    nombre: payload.nombre as String,
+						    apellido: payload.apellido as String,
+						    email: payload.email as String,
+						    telefono: payload.telefono as String
+						}]]]>
+</db:input-parameters>
 		</db:insert>
-    <set-payload value='#[{"message": "User created successfully"}]' doc:name="Set Payload"/>
+		<set-payload value='#[{"message": "User created successfully"}]' doc:name="Set Payload"/>
     <set-variable variableName="httpStatus" value="201" doc:name="Set HTTP Status"/>
-		<ee:transform doc:name="Transform Message" doc:id="cf6aff23-1b4e-47d8-9de5-cbbaea564c57" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-payload]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
 </flow>
 
-<flow name="UpdateUserFlow">
+<flow name="PUTUserFlow">
     <set-payload value='#[{"message": "PUT request handled"}]' doc:name="Set Payload"/>
     <set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status"/>
 		<ee:transform doc:name="Transform Message" doc:id="e4d8ab6c-63aa-4335-8163-b270d55a98a3" >
@@ -117,36 +114,28 @@ payload]]></ee:set-payload>
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
-payload]]></ee:set-payload>
+payload]]>
+				</ee:set-payload>
 			</ee:message>
 		</ee:transform>
 </flow>
 
-<flow name="DeleteUserFlow">
+<flow name="DELETEUserFlow">
 		<db:delete config-ref="OracleConnection" doc:name="Delete Cliente">
         <db:sql><![CDATA[DELETE FROM CLIENTES WHERE CLIENTEID = :clienteid]]>
         </db:sql>
 			<db:input-parameters><![CDATA[#[{ clienteid: vars.clienteid}]]]></db:input-parameters>
     </db:delete>
-		<logger level="INFO" message="#[{ clienteid: vars.clienteid }]" />
 		<set-payload value='#[{"message": "Customer deleted successfully"}]' doc:name="Set Success Response"/>
     <set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status 200"/>
-		<ee:transform doc:name="Transform Message" doc:id="037c8ec1-f1a0-4505-99ca-dd23c94a9c55" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-payload]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
 </flow>
 
-	<flow name="UserReports" doc:id="376ac143-8270-41b8-9631-2c53101b6ddf" >
+	<flow name="GENERATEUserReports" doc:id="376ac143-8270-41b8-9631-2c53101b6ddf" >
 		<db:stored-procedure doc:name="Stored procedure" doc:id="8e3e74a2-ec58-4c07-ac9a-80351417f437" config-ref="OracleConnection">
 			<db:sql><![CDATA[{call GetClienteOrderDetails_Oracle(:p_cliente_id, :p_results, :resultCount)}]]>
             </db:sql>
 			<db:in-out-parameters >
-				<db:in-out-parameter key="p_cliente_id" value="#[vars.clienteid]" />
+				<db:in-out-parameter key="p_cliente_id" value="#[payload.p_cliente_id]" />
 			</db:in-out-parameters>
 			<db:output-parameters >
 				<db:output-parameter key="p_results" type="REF_CURSOR" />
@@ -162,8 +151,9 @@ output application/json
 ---
 {
 	"totalRecords": payload.resultCount,
-    "orderDetails": payload.p_results
-}]]></ee:set-payload>
+	"orderDetails": payload.p_results
+}]]>
+				</ee:set-payload>
             </ee:message>
         </ee:transform>
 		<ee:transform doc:name="Transform Message1" doc:id="93e93a43-68c9-4121-a225-d26135f4d76a" >
@@ -173,20 +163,40 @@ output application/csv header=true, separator=","
 ---
 payload.orderDetails map (order, index) -> {
 	CLIENTE_NOMBRE: order.CLIENTE_NOMBRE,
-    CLIENTE_APELLIDO: order.CLIENTE_APELLIDO,
-    CLIENTE_EMAIL: order.CLIENTE_EMAIL,
-    ORDEN_ID: order.ORDEN_ID,
-    FECHA_ORDEN: order.FECHA_ORDEN,
-    PRODUCTO_NOMBRE: order.PRODUCTO_NOMBRE,
-    PRODUCTO_DESCRIPCION: order.PRODUCTO_DESCRIPCION,
-    PRODUCTO_PRECIO: order.PRODUCTO_PRECIO,
-    CANTIDAD_ORDENADA: order.CANTIDAD_ORDENADA,
-    TOTAL_ORDEN: order.TOTAL_ORDEN
-}]]></ee:set-payload>
+	CLIENTE_APELLIDO: order.CLIENTE_APELLIDO,
+	CLIENTE_EMAIL: order.CLIENTE_EMAIL,
+	ORDEN_ID: order.ORDEN_ID,
+	FECHA_ORDEN: order.FECHA_ORDEN,
+	PRODUCTO_NOMBRE: order.PRODUCTO_NOMBRE,
+	PRODUCTO_DESCRIPCION: order.PRODUCTO_DESCRIPCION,
+	PRODUCTO_PRECIO: order.PRODUCTO_PRECIO,
+	CANTIDAD_ORDENADA: order.CANTIDAD_ORDENADA,
+	TOTAL_ORDEN: order.TOTAL_ORDEN
+}]]>
+			</ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<set-variable value="#['ordenes_clientes_' ++ vars.clienteid as String ++'_'++ (now() as String {format: 'yyyyMMddHHmmss'}) ++ '.csv']" doc:name="Set Variable" doc:id="dfe64e89-83c8-4a1e-9bf9-4bde418b837a" variableName="filename"/>
+		<set-variable value="#['order_report_' ++ vars.clienteid as String ++'_'++ (now() as String {format: 'yyyyMMddHHmmss'}) ++ '.csv']" doc:name="Set Variable" doc:id="dfe64e89-83c8-4a1e-9bf9-4bde418b837a" variableName="filename"/>
 		<file:write doc:name="Write" doc:id="146e55f8-a65d-4e57-84fd-5e1e204ea159" path='#[vars.filename]' config-ref="File_Config"/>
+	</flow>
+	<flow name="GENERATEUsersReports" doc:id="30ba00d5-7da0-4bd3-b3bc-54a70e79a50d" >
+		<db:select doc:name="Select" doc:id="a93dda83-0721-492d-b8d1-eedc73f343a0" config-ref="OracleConnection">
+			<db:sql><![CDATA[SELECT CLIENTEID FROM CLIENTES]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="2ee0ee35-dda9-444b-9f05-90cee744a14f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload map ((cliente, index) -> {
+	p_cliente_id: cliente.CLIENTEID as Number
+})]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="7a62ee6c-6f8e-497b-81e5-1713128ea2ff" collection="payload">
+			<set-variable value="#[payload.p_cliente_id]" doc:name="Set Variable" doc:id="7199bc0f-0d59-498e-82ee-1d82bb9dcdfc" variableName="clienteid" />
+			<flow-ref doc:name="Flow Reference" doc:id="ff3badb1-2422-48c9-8fed-fc15d4d2e603" name="GENERATEUserReports"/>
+		</foreach>
 	</flow>
 	
 	
