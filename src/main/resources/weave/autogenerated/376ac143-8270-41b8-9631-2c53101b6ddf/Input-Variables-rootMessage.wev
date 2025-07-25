@@ -1,0 +1,7 @@
+%dw 2.0
+
+type auto_376ac143_8270_41b8_9631_2c53101b6ddf_Input_Variables_rootMessage = {|
+  payload: Array<{| p_cliente_id: Number |}>, 
+  attributes: Null
+|} {"typeId": "org.mule.runtime.api.message.Message"}
+
