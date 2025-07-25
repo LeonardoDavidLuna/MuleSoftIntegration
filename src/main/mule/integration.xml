@@ -156,9 +156,11 @@ output application/json
 				</ee:set-payload>
             </ee:message>
         </ee:transform>
-		<ee:transform doc:name="Transform Message1" doc:id="93e93a43-68c9-4121-a225-d26135f4d76a" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[ %dw 2.0
+		<choice doc:name="Choice" doc:id="6f46cc19-f709-4b70-b2b2-6daf01b1a27c" >
+			<when expression="#[payload.totalRecords != 0]">
+				<ee:transform doc:name="Transform Message1" doc:id="93e93a43-68c9-4121-a225-d26135f4d76a">
+			<ee:message>
+				<ee:set-payload><![CDATA[ %dw 2.0
 output application/csv header=true, separator=","
 ---
 payload.orderDetails map (order, index) -> {
@@ -176,8 +178,20 @@ payload.orderDetails map (order, index) -> {
 			</ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<set-variable value="#['order_report_' ++ vars.clienteid as String ++'_'++ (now() as String {format: 'yyyyMMddHHmmss'}) ++ '.csv']" doc:name="Set Variable" doc:id="dfe64e89-83c8-4a1e-9bf9-4bde418b837a" variableName="filename"/>
-		<file:write doc:name="Write" doc:id="146e55f8-a65d-4e57-84fd-5e1e204ea159" path='#[vars.filename]' config-ref="File_Config"/>
+				<set-variable value="#['order_report_' ++ vars.clienteid as String ++'_'++ (now() as String {format: 'yyyyMMddHHmmss'}) ++ '.csv']" doc:name="Set Variable" doc:id="dfe64e89-83c8-4a1e-9bf9-4bde418b837a" variableName="filename" />
+				<file:write doc:name="Write" doc:id="146e55f8-a65d-4e57-84fd-5e1e204ea159" path="#[vars.filename]" config-ref="File_Config" />
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="8a2ee242-8bd9-434e-98c8-7242c2599a87" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
 	</flow>
 	<flow name="GENERATEUsersReports" doc:id="30ba00d5-7da0-4bd3-b3bc-54a70e79a50d" >
 		<db:select doc:name="Select" doc:id="a93dda83-0721-492d-b8d1-eedc73f343a0" config-ref="OracleConnection">
