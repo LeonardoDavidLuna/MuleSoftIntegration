@@ -30,7 +30,7 @@ http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/fil
             <flow-ref name="DELETEUserFlow" doc:name="Call Delete User Flow"/>
         </when>
         <when expression="#[attributes.method == 'GET' and attributes.relativePath == '/api/report' and attributes.queryParams.clienteid != null]">
-            <flow-ref name="GENERATEUserReports" doc:name="Call Reports User Flow"/>
+				<flow-ref name="GENERATEUserReports" doc:name="Call Reports User Flow"/>
         </when>
         <when expression="#[attributes.method == 'GET' and attributes.relativePath == '/api/allreports']">
             <flow-ref name="GENERATEUsersReports" doc:name="Call All Reports User Flow"/>
@@ -130,12 +130,31 @@ payload]]>
     <set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status 200"/>
 </flow>
 
+	<flow name="GENERATEUsersReports" doc:id="30ba00d5-7da0-4bd3-b3bc-54a70e79a50d">
+		<db:select doc:name="Select" doc:id="a93dda83-0721-492d-b8d1-eedc73f343a0" config-ref="OracleConnection">
+			<db:sql><![CDATA[SELECT CLIENTEID FROM CLIENTES]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="2ee0ee35-dda9-444b-9f05-90cee744a14f">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload map ((cliente, index) -> {
+	clienteid: cliente.clienteid
+})]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="7a62ee6c-6f8e-497b-81e5-1713128ea2ff" collection="payload">
+			<set-variable value="#[payload.clienteid]" doc:name="Set Variable" doc:id="7199bc0f-0d59-498e-82ee-1d82bb9dcdfc" variableName="clienteid" />
+			<flow-ref doc:name="Flow Reference" doc:id="ff3badb1-2422-48c9-8fed-fc15d4d2e603" name="GENERATEUserReports" />
+		</foreach>
+	</flow>
 	<flow name="GENERATEUserReports" doc:id="376ac143-8270-41b8-9631-2c53101b6ddf" >
 		<db:stored-procedure doc:name="Stored procedure" doc:id="8e3e74a2-ec58-4c07-ac9a-80351417f437" config-ref="OracleConnection">
 			<db:sql><![CDATA[{call GetClienteOrderDetails_Oracle(:p_cliente_id, :p_results, :resultCount)}]]>
             </db:sql>
 			<db:in-out-parameters >
-				<db:in-out-parameter key="p_cliente_id" value="#[payload.p_cliente_id]" />
+				<db:in-out-parameter key="p_cliente_id" value="#[vars.clienteid]" />
 			</db:in-out-parameters>
 			<db:output-parameters >
 				<db:output-parameter key="p_results" type="REF_CURSOR" />
@@ -192,25 +211,6 @@ payload]]></ee:set-payload>
 				</ee:transform>
 			</otherwise>
 		</choice>
-	</flow>
-	<flow name="GENERATEUsersReports" doc:id="30ba00d5-7da0-4bd3-b3bc-54a70e79a50d" >
-		<db:select doc:name="Select" doc:id="a93dda83-0721-492d-b8d1-eedc73f343a0" config-ref="OracleConnection">
-			<db:sql><![CDATA[SELECT CLIENTEID FROM CLIENTES]]></db:sql>
-		</db:select>
-		<ee:transform doc:name="Transform Message" doc:id="2ee0ee35-dda9-444b-9f05-90cee744a14f" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/java
----
-payload map ((cliente, index) -> {
-	p_cliente_id: cliente.CLIENTEID as Number
-})]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
-		<foreach doc:name="For Each" doc:id="7a62ee6c-6f8e-497b-81e5-1713128ea2ff" collection="payload">
-			<set-variable value="#[payload.p_cliente_id]" doc:name="Set Variable" doc:id="7199bc0f-0d59-498e-82ee-1d82bb9dcdfc" variableName="clienteid" />
-			<flow-ref doc:name="Flow Reference" doc:id="ff3badb1-2422-48c9-8fed-fc15d4d2e603" name="GENERATEUserReports"/>
-		</foreach>
 	</flow>
 	
 	
